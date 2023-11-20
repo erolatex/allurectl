@@ -1,5 +1,5 @@
 
-name: Check New Tags, Sync with Upstream, Build and Push Multi-Architecture Docker Image
+name: Check New Tags, Build and Push Multi-Architecture Docker Image
 
 on:
   workflow_dispatch:
@@ -34,13 +34,12 @@ jobs:
       - name: Compare tags and build if new
         if: ${{ env.LATEST_GITHUB_TAG != env.DOCKERHUB_LATEST_TAG }}
         run: |
-          echo 'FROM docker:23' > Dockerfile
+          echo 'FROM --platform=${BUILDPLATFORM} docker:23' > Dockerfile
+          echo 'ARG TARGETARCH' >> Dockerfile
           echo 'RUN apk add bash git gettext curl' >> Dockerfile
-          echo 'ARG ARCH' >> Dockerfile
-          echo 'ARG LATEST_GITHUB_TAG' >> Dockerfile
-          echo 'ADD https://github.com/allure-framework/allurectl/releases/download/${LATEST_GITHUB_TAG}/allurectl_linux_${ARCH} /bin/allurectl' >> Dockerfile
+          echo 'ADD https://github.com/allure-framework/allurectl/releases/download/${LATEST_GITHUB_TAG}/allurectl_linux_${TARGETARCH} /bin/allurectl' >> Dockerfile
           echo 'RUN chmod +x /bin/allurectl' >> Dockerfile
 
           # Настройка Docker Buildx
           docker buildx create --use
-          docker buildx build --platform linux/amd64,linux/arm64/v8 --tag erolatex/allurectl:${LATEST_GITHUB_TAG} --tag erolatex/allurectl:latest --push --build-arg LATEST_GITHUB_TAG=${LATEST_GITHUB_TAG} --build-arg ARCH=amd64 .
+          docker buildx build --platform linux/amd64,linux/arm64/v8 --tag erolatex/allurectl:${LATEST_GITHUB_TAG} --tag erolatex/allurectl:latest --push .
