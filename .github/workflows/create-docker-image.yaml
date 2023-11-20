@@ -13,11 +13,11 @@ jobs:
       # Шаг 1: Получение тегов из allure-framework/allurectl
       - name: Fetch tags from allure-framework/allurectl
         run: |
-          git clone --bare https://github.com/allure-framework/allurectl.git temp_repo
+          git clone https://github.com/allure-framework/allurectl.git temp_repo
           cd temp_repo
           LATEST_GITHUB_TAG=$(git tag -l --sort=-v:refname | head -n 1)
-          cd ..
           echo "LATEST_GITHUB_TAG=$LATEST_GITHUB_TAG" >> $GITHUB_ENV
+          cd ..
           rm -rf temp_repo
 
       # Шаг 3: Получение последнего тега из Docker Hub
