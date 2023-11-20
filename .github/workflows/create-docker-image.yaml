@@ -10,20 +10,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Шаг 1: Клонирование форк-репозитория
-      - name: Checkout fork repository
-        uses: actions/checkout@v2
-        with:
-          repository: erolatex/allurectl
-
-      # Шаг 2: Синхронизация с апстрим-репозиторием
-      - name: Sync with upstream repository
+      # Шаг 1: Получение тегов из allure-framework/allurectl
+      - name: Fetch tags from allure-framework/allurectl
         run: |
-          git remote add upstream https://github.com/allure-framework/allurectl.git
-          git fetch upstream
-          git checkout main
-          git merge upstream/main || true
-          git push || true
+          git clone --bare https://github.com/allure-framework/allurectl.git temp_repo
+          cd temp_repo
+          LATEST_GITHUB_TAG=$(git tag -l --sort=-v:refname | head -n 1)
+          cd ..
+          echo "LATEST_GITHUB_TAG=$LATEST_GITHUB_TAG" >> $GITHUB_ENV
+          rm -rf temp_repo
 
       # Шаг 3: Получение последнего тега из Docker Hub
       - name: Get the latest tag from Docker Hub
