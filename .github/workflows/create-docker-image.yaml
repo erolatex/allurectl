@@ -29,6 +29,7 @@ jobs:
       - name: Get the latest tag from Docker Hub
         run: |
           DOCKERHUB_LATEST_TAG=$(curl -s "https://hub.docker.com/v2/repositories/erolatex/allurectl/tags/?page_size=1&page=1&ordering=last_updated" | jq -r '.results[0].name // empty')
+          echo "DOCKERHUB_LATEST_TAG=$DOCKERHUB_LATEST_TAG" >> $GITHUB_ENV
 
       # Шаг 4: Получение тегов из GitHub репозитория
       - name: Fetch tags from GitHub
@@ -37,27 +38,25 @@ jobs:
           LATEST_GITHUB_TAG=$(git tag -l --sort=-v:refname | head -n 1)
           echo "LATEST_GITHUB_TAG=$LATEST_GITHUB_TAG" >> $GITHUB_ENV
 
-          if [ -z "$DOCKERHUB_LATEST_TAG" ]; then
-              DOCKERHUB_LATEST_TAG=$LATEST_GITHUB_TAG
-          fi
-          echo "DOCKERHUB_LATEST_TAG=$DOCKERHUB_LATEST_TAG" >> $GITHUB_ENV
-
       - name: Login to Docker Hub
         uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      # Шаг 5: Сравнение тегов и сборка, если есть новый
-      - name: Compare tags and build if new
-        if: ${{ env.LATEST_GITHUB_TAG != env.DOCKERHUB_LATEST_TAG }}
+      # Шаг 5: Сравнение тегов и сборка, если есть новый или нет тегов на Docker Hub
+      - name: Compare tags and build
         run: |
-          echo 'FROM docker:23' > Dockerfile
-          echo 'RUN apk add bash git gettext curl' >> Dockerfile
-          echo 'ARG ARCH' >> Dockerfile
-          echo 'ADD https://github.com/allure-framework/allurectl/releases/download/${LATEST_GITHUB_TAG}/allurectl_linux_${ARCH} /bin/allurectl' >> Dockerfile
-          echo 'RUN chmod +x /bin/allurectl' >> Dockerfile
+          if [ "$LATEST_GITHUB_TAG" != "$DOCKERHUB_LATEST_TAG" ] || [ -z "$DOCKERHUB_LATEST_TAG" ]; then
+            echo 'FROM docker:23' > Dockerfile
+            echo 'RUN apk add bash git gettext curl' >> Dockerfile
+            echo 'ARG ARCH' >> Dockerfile
+            echo 'ADD https://github.com/allure-framework/allurectl/releases/download/${LATEST_GITHUB_TAG}/allurectl_linux_${ARCH} /bin/allurectl' >> Dockerfile
+            echo 'RUN chmod +x /bin/allurectl' >> Dockerfile
 
-          # Настройка Docker Buildx
-          docker buildx create --use
-          docker buildx build --platform linux/amd64,linux/arm64/v8 --tag erolatex/allurectl:${LATEST_GITHUB_TAG} --tag erolatex/allurectl:latest --push .
+            # Настройка Docker Buildx
+            docker buildx create --use
+            docker buildx build --platform linux/amd64,linux/arm64/v8 --tag erolatex/allurectl:${LATEST_GITHUB_TAG} --tag erolatex/allurectl:latest --push .
+          else
+            echo "Текущие теги на GitHub и Docker Hub совпадают, сборка не требуется."
+          fi
