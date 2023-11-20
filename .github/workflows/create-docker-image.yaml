@@ -37,9 +37,10 @@ jobs:
           echo 'FROM docker:23' > Dockerfile
           echo 'RUN apk add bash git gettext curl' >> Dockerfile
           echo 'ARG ARCH' >> Dockerfile
+          echo 'ARG LATEST_GITHUB_TAG' >> Dockerfile
           echo 'ADD https://github.com/allure-framework/allurectl/releases/download/${LATEST_GITHUB_TAG}/allurectl_linux_${ARCH} /bin/allurectl' >> Dockerfile
           echo 'RUN chmod +x /bin/allurectl' >> Dockerfile
 
           # Настройка Docker Buildx
           docker buildx create --use
-          docker buildx build --platform linux/amd64,linux/arm64/v8 --tag erolatex/allurectl:${LATEST_GITHUB_TAG} --tag erolatex/allurectl:latest --push .
+          docker buildx build --platform linux/amd64,linux/arm64/v8 --tag erolatex/allurectl:${LATEST_GITHUB_TAG} --tag erolatex/allurectl:latest --push --build-arg LATEST_GITHUB_TAG=${LATEST_GITHUB_TAG} --build-arg ARCH=amd64 .
