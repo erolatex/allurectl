@@ -1,0 +1,60 @@
+name: Check New Tags, Sync with Upstream, Build and Push Multi-Architecture Docker Image
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Запуск каждый час
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Шаг 1: Клонирование форк-репозитория
+      - name: Checkout fork repository
+        uses: actions/checkout@v2
+        with:
+          repository: erolatex/allurectl
+
+      # Шаг 2: Синхронизация с апстрим-репозиторием
+      - name: Sync with upstream repository
+        run: |
+          git remote add upstream https://github.com/allure-framework/allurectl.git
+          git fetch upstream
+          git checkout master
+          git merge upstream/master
+          git push
+      - name: Install jq
+        run: sudo apt-get install jq
+
+      # Шаг 3: Получение последнего тега из Docker Hub
+      - name: Get the latest tag from Docker Hub
+        run: |
+          DOCKERHUB_LATEST_TAG=$(curl -s "https://hub.docker.com/v2/repositories/erolatex/allurectl/tags/?page_size=1&page=1&ordering=last_updated" | jq -r '.results[0].name')
+          echo "DOCKERHUB_LATEST_TAG=$DOCKERHUB_LATEST_TAG" >> $GITHUB_ENV
+
+      # Шаг 4: Получение тегов из GitHub репозитория
+      - name: Fetch tags from GitHub
+        run: |
+          git fetch --tags
+          LATEST_GITHUB_TAG=$(git tag -l --sort=-v:refname | head -n 1)
+          echo "LATEST_GITHUB_TAG=$LATEST_GITHUB_TAG" >> $GITHUB_ENV
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      # Шаг 5: Сравнение тегов и сборка, если есть новый
+      - name: Compare tags and build if new
+        if: ${{ env.LATEST_GITHUB_TAG != env.DOCKERHUB_LATEST_TAG }}
+        run: |
+          echo 'FROM docker:23' > Dockerfile
+          echo 'RUN apk add bash git gettext curl' >> Dockerfile
+          echo 'ARG ARCH' >> Dockerfile
+          echo 'ADD https://github.com/allure-framework/allurectl/releases/download/${LATEST_GITHUB_TAG}/allurectl_linux_${ARCH} /bin/allurectl' >> Dockerfile
+          echo 'RUN chmod +x /bin/allurectl' >> Dockerfile
+
+          # Настройка Docker Buildx
+          docker buildx create --use
+          docker buildx build --platform linux/amd64,linux/arm64/v8 --tag erolatex/allurectl:${LATEST_GITHUB_TAG} --tag erolatex/allurectl:latest --push .
