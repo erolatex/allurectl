@@ -43,7 +43,7 @@ jobs:
           file: ./Dockerfile
           push: true
           build-args: |
-            LATEST_GITHUB_TAG=$LATEST_GITHUB_TAG
+            LATEST_GITHUB_TAG={{ env.LATEST_GITHUB_TAG }}
           tags: |
             erolatex/allurectl:latest
             erolatex/allurectl:${{ env.LATEST_GITHUB_TAG }}
