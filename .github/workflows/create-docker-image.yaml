@@ -21,6 +21,9 @@ jobs:
           LATEST_GITHUB_TAG=$(git tag -l --sort=-v:refname | head -n 1)
           echo "LATEST_GITHUB_TAG=$LATEST_GITHUB_TAG" >> $GITHUB_ENV
           cd ..
+      
+      - name: Check out the repo
+        uses: actions/checkout@v2
 
       # Шаг 2: Логин в Docker Hub
       - name: Login to Docker Hub
