@@ -3,7 +3,7 @@ name: Check New Tags, Sync with Upstream, Build and Push Multi-Architecture Dock
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 * * * *' # Запуск каждый час
+    - cron: '0 0 * * *' # Запуск каждый час
 
 jobs:
   build-and-push:
@@ -22,8 +22,8 @@ jobs:
           git remote add upstream https://github.com/allure-framework/allurectl.git
           git fetch upstream
           git checkout main
-          git merge upstream/main
-          git push
+          git merge upstream/main || true
+          git push || true
       - name: Install jq
         run: sudo apt-get install jq
 
