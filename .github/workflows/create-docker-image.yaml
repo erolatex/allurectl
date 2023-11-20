@@ -1,6 +1,7 @@
 name: Check New Tags, Sync with Upstream, Build and Push Multi-Architecture Docker Image
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: '0 * * * *' # Запуск каждый час
 
