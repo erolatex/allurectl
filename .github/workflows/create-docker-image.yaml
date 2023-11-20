@@ -33,10 +33,5 @@ jobs:
       # Шаг 4: Сборка и публикация Docker образа
       - name: Build and push Docker image
         run: |
-          echo 'FROM docker:23' > Dockerfile
-          echo 'ARG TARGETARCH' >> Dockerfile
-          echo 'RUN apk add bash git gettext curl' >> Dockerfile
-          echo 'ADD https://github.com/allure-framework/allurectl/releases/download/${LATEST_GITHUB_TAG}/allurectl_linux_\${TARGETARCH} /bin/allurectl' >> Dockerfile
-          echo 'RUN chmod +x /bin/allurectl' >> Dockerfile
           docker buildx create --use
-          docker buildx build --platform linux/amd64,linux/arm64/v8 --tag erolatex/allurectl:${LATEST_GITHUB_TAG} --tag erolatex/allurectl:latest --push .
+          docker buildx build --file Dockerfile --platform linux/amd64,linux/arm64/v8 --tag erolatex/allurectl:${LATEST_GITHUB_TAG} --tag erolatex/allurectl:latest --push .
