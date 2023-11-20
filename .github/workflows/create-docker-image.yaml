@@ -26,13 +26,7 @@ jobs:
           DOCKERHUB_LATEST_TAG=$(curl -s "https://hub.docker.com/v2/repositories/erolatex/allurectl/tags/?page_size=1&page=1&ordering=last_updated" | jq -r '.results[0].name // empty')
           echo "DOCKERHUB_LATEST_TAG=$DOCKERHUB_LATEST_TAG" >> $GITHUB_ENV
 
-      # Шаг 4: Получение тегов из GitHub репозитория
-      - name: Fetch tags from GitHub
-        run: |
-          git fetch --tags
-          LATEST_GITHUB_TAG=$(git tag -l --sort=-v:refname | head -n 1)
-          echo "LATEST_GITHUB_TAG=$LATEST_GITHUB_TAG" >> $GITHUB_ENV
-
+      # Шаг 4: Логин в докер
       - name: Login to Docker Hub
         uses: docker/login-action@v1
         with:
