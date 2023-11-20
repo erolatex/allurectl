@@ -42,7 +42,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          bsecret-envs: |
+          secret-envs: |
             LATEST_GITHUB_TAG={{ env.LATEST_GITHUB_TAG }}
           tags: |
             erolatex/allurectl:latest
