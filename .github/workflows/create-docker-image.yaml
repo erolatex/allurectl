@@ -1,3 +1,4 @@
+
 name: Check New Tags, Build and Push Docker Image
 
 on:
@@ -10,8 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
-      # Шаг 1: Клонирование основного репозитория и получение тегов...
+      # Шаги 1 и 2: Клонирование репозитория и получение тегов...
       - name: Clone main repository
         run: git clone https://github.com/allure-framework/allurectl.git ./allurectl_repo
 
@@ -21,9 +21,18 @@ jobs:
           LATEST_GITHUB_TAG=$(git tag -l --sort=-v:refname | head -n 1)
           echo "LATEST_GITHUB_TAG=$LATEST_GITHUB_TAG" >> $GITHUB_ENV
           cd ..
-    
+
       - name: Check out the repo
         uses: actions/checkout@v2
+
+      # Шаг: Проверка наличия тега на Docker Hub
+      - name: Check for existing image
+        id: existing-image
+        uses: javajawa/check-registry-for-image@v1
+        with:
+          registry: docker.io
+          repository: erolatex/allurectl
+          tag: ${{ env.LATEST_GITHUB_TAG }}
 
       # Шаг 2: Логин в Docker Hub
       - name: Login to Docker Hub
@@ -31,22 +40,19 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-      
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
-      # Шаг 3: Сборка и публикация Docker образа
+      # Шаг 3: Сборка и публикация Docker образа (пропуск, если тег уже существует)
       - name: Build and push Docker images
+        if: steps.existing-image.outputs.exists == 'false'
         uses: docker/build-push-action@v2
         with:
           context: .
           file: ./Dockerfile
           push: true
-          secret-envs: |
-            LATEST_GITHUB_TAG={{ env.LATEST_GITHUB_TAG }}
           tags: |
             erolatex/allurectl:latest
             erolatex/allurectl:${{ env.LATEST_GITHUB_TAG }}
           platforms: linux/amd64,linux/arm64
-          build-args: |
-            LATEST_GITHUB_TAG=${{ env.LATEST_GITHUB_TAG }}
